@@ -1,0 +1,2169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="initial-scale=1 maximum-scale=1 user-scalable=0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+
+<title>Adventure</title>
+<script type="text/javascript">
+window.addEventListener('load', eventWindowLoaded, false);	
+function eventWindowLoaded() {
+
+	canvasApp();
+}
+
+</script>
+<script src="modernizr-1.6.min.js"></script>
+<script language="Javascript" ">
+	
+function canvasSupport () {
+  	return Modernizr.canvas;
+}
+
+function canvasApp(){
+	if (!canvasSupport()) {
+			 return;
+  	}else{
+	    theCanvas = document.getElementById('canvas');
+	    context = theCanvas.getContext('2d');
+	}
+	
+	
+	
+	var screen=1;
+	var mouseX;
+	var mouseY;
+	var endLocation={x:0, y:0};
+	var nextLocation={x:0, y:0};
+	var xunits=0;
+	var yunits=0;
+	var moves=0;
+	var speed=3;
+	var finished=true;
+	var player={x:50,y:50, dx:0, dy:0};
+	var screen0Objects=[];
+	var screen1Objects=[];
+	var screen2Objects=[];
+	var screen3Objects=[];
+	var screen4Objects=[];
+	var screen5Objects=[];
+	var screen6Objects=[];
+	var screen7Objects=[];
+	
+	var screen0BackgroundColor;
+	var screen1BackgroundColor;
+	var screen2BackgroundColor;
+	var screen3BackgroundColor;
+	var screen4BackgroundColor;
+	var screen5BackgroundColor;
+	var screen6BackgroundColor;
+	var screen7BackgroundColor;
+	
+	var currentScreenObjects=[];
+	var useMouseControl=true;
+	var pitFalling=false;
+	var maxPitJumpMoves=140;
+	var hasRedKey=false;
+	var hasYellowKey=false;
+	var hasGreenKey=true;
+	var hasPresent1=false;
+	var currentBackgroundColor="#000000";
+	var hasAtari=false;
+	var present1Complete=false;
+	var atariComplete=false;
+	
+	var timeoout;
+	
+	var mode="title";
+	
+
+	
+	var titleDelay=7;
+	var titleDelayCount=0;
+	var titleIndex=0;
+	
+	var getReadyCount=0;
+	var getReadyDelay=25;
+	
+	var vcsImage=new Image()
+	vcsImage.src="vcs1.gif";
+	
+	var instructionsImage=new Image();
+	instructionsImage.src="instructions.gif";
+	
+	var clickToStartImage=new Image();
+	clickToStartImage.src="clicktostart.gif"
+	
+	console.log("canvas app");
+	var currentfullpath="";
+	console.log("fullPath="+document.URL);
+	
+	var pathString=document.URL;
+	var pathStringSplit=pathString.split("/");
+	for (var ctr=0;ctr<pathStringSplit.length-1;ctr++) {
+		currentfullpath+=pathStringSplit[ctr]+"/";
+	}
+	console.log("new path=" + currentfullpath);
+	
+	//******  sounds 
+	console.log("loading title sound");
+	var titlesoundplaying=false;
+	var sound_title;
+	sound_title = document.createElement("audio");
+	document.body.appendChild(sound_title);
+	audioType = supportedAudioFormat(sound_title);
+	sound_title.setAttribute("src", "sounds/titleloop." + audioType);
+	console.log("sound_title.src=" , sound_title.src);
+	
+	var sound_fall = document.createElement("audio");
+	audioType = supportedAudioFormat(sound_fall);
+	sound_fall.setAttribute("src", "sounds/fall." + audioType);
+	
+	var sound_pickup = document.createElement("audio");
+	audioType = supportedAudioFormat(sound_pickup);
+	sound_pickup.setAttribute("src", "sounds/pickup." + audioType);
+	
+	var sound_jump = document.createElement("audio");
+	audioType = supportedAudioFormat(sound_jump);
+	sound_jump.setAttribute("src", "sounds/jump." + audioType);
+	
+	var sound_dropitem = document.createElement("audio");
+	audioType = supportedAudioFormat(sound_dropitem);
+	sound_dropitem.setAttribute("src", "sounds/start." + audioType);
+	
+	var sound_ingame = document.createElement("audio");
+	audioType = supportedAudioFormat(sound_ingame);
+	sound_ingame.setAttribute("src", "sounds/ingame." + audioType);
+	
+	//***** end sounds
+	var colorStops = new Array(
+	{color:"#FFFFFF", stopPercent:.125},
+	{color:"#FF0000", stopPercent:.375},
+	{color:"#ffffff", stopPercent:.625},
+	{color:"#00ff00", stopPercent:.875},
+	{color:"#FFFFFF", stopPercent:.99});
+	
+	var gradient;
+	var gradientline={topx:theCanvas.width/2, topy:0, botx:theCanvas.width/2, boty:theCanvas.height};
+	
+	var runningTiles=new Image();
+	runningTiles.src="running11.png";
+	
+	var runningTiles2=new Image();
+	runningTiles2.src="running11_2.png";
+	
+	var runningManFrames=[0,1,2,3,4,5,6,7,8,9];
+	var runningManFrameIndex=0;
+	var runningMan={x:300,y:100}
+	var runningDelay=5;
+	var runningCount=0;
+	
+	//player color cycle
+	var playerColorStops = new Array(
+	{color:"#FFFFFF", stopPercent:.100},
+	{color:"#eeeeee", stopPercent:.300},
+	{color:"#dddddd", stopPercent:.600},
+	{color:"#cccccc", stopPercent:.900},
+	{color:"#FFFFFF", stopPercent:.999});
+	var playerGradient;
+	var playerGradientline={topx:theCanvas.width/2, topy:0, botx:theCanvas.width/2, boty:theCanvas.height};
+	
+	function startUp(){
+		
+		setupScreen0Objects();
+		setupScreen1Objects();
+		setupScreen2Objects();
+		setupScreen3Objects();
+		setupScreen4Objects();
+		setupScreen5Objects();
+		setupScreen6Objects();
+		setupScreen7Objects();
+		
+		currentScreenObjects=screen0Objects;
+		currentBackgroundColor=screen0BackgroundColor;
+		
+		console.log("start up");
+		player.x=50;
+		player.y=50;
+		player.width=16;
+		player.height=16;
+		player.hitWidth=16;
+		player.hitHeight=16;
+		player.hitXModifier=8;
+		player.hitYModifier=8;
+		player.canMove=false;
+		nextLocation.x=player.x;
+		nextLocation.y=player.y;
+		
+		
+		
+		
+		//theCanvas.addEventListener("mousemove", onMouseMove, false);
+		//theCanvas.addEventListener("touchmove", onTouchMove, false);
+		theCanvas.addEventListener("mouseup", onMouseClick, false);
+		 window.requestAnimFrame = (function(){
+		  return  window.requestAnimationFrame       || 
+				  window.webkitRequestAnimationFrame || 
+				  window.mozRequestAnimationFrame    || 
+				  window.oRequestAnimationFrame      || 
+				  window.msRequestAnimationFrame     || 
+				  function( callback ){
+					window.setTimeout(callback, 1000 / 60);
+				  };
+		})();
+		
+		
+		
+		(function animloop(){
+		  requestAnimFrame(animloop);
+		  gameLoop();
+		})();
+		
+	}
+	
+	function supportedAudioFormat(audio) {
+		var returnExtension = "";
+		if (audio.canPlayType("audio/ogg") =="probably" || audio.canPlayType("audio/ogg") == "maybe") {
+			returnExtension = "ogg";
+		} else if(audio.canPlayType("audio/wav") =="probably" || audio.canPlayType("audio/wav") == "maybe") {
+			returnExtension = "wav";
+		} else if(audio.canPlayType("audio/mp3") == "probably" || audio.canPlayType("audio/mp3") == "maybe") {
+			returnExtension = "mp3";
+		}
+		
+	return returnExtension;
+	
+	}
+	
+	function gameLoop() {
+		//console.log("game loop");
+		
+		if (mode=="title") {
+			
+			animateTitle();
+			
+		}else if (mode=="game"){
+			update();
+			checkCollisions();
+    		render();
+			
+		}else if (mode=="instructions") {
+			displayInstructions();
+		}else if (mode=="getready") {
+			doGetReady();
+		}
+		
+		updateGradient();
+	}
+	
+	function doGetReady(){
+		context.fillStyle="#000000";
+		context.fillRect(0,0,480,320);	
+		getReadyCount++;
+		if (getReadyCount > getReadyDelay) {
+			mode="game";
+		}
+		render();
+		
+	}
+	
+	
+	
+	function updateGradient() {
+		gradient = context.createLinearGradient( gradientline.topx,gradientline.topy,gradientline.botx,gradientline.boty);
+		for (var i=0; i < colorStops.length; i++) {
+			var tempColorStop = colorStops[i];
+			var tempColor = tempColorStop.color;
+			var tempStopPercent = tempColorStop.stopPercent;
+			gradient.addColorStop(tempStopPercent,tempColor);
+			tempStopPercent += .015;
+			if (tempStopPercent > 1) {
+				tempStopPercent = 0;
+			}
+			tempColorStop.stopPercent = tempStopPercent;;
+			colorStops[i] = tempColorStop;
+		}
+			
+	}
+	
+	function updatePlayerGradient() {
+		playerGradient = context.createLinearGradient( playerGradientline.topx,playerGradientline.topy,playerGradientline.botx,playerGradientline.boty);
+		for (var i=0; i < playerColorStops.length; i++) {
+			var tempColorStop = playerColorStops[i];
+			var tempColor = tempColorStop.color;
+			var tempStopPercent = tempColorStop.stopPercent;
+			playerGradient.addColorStop(tempStopPercent,tempColor);
+			tempStopPercent += .015;
+			if (tempStopPercent > 1) {
+				tempStopPercent = 0;
+			}
+			tempColorStop.stopPercent = tempStopPercent;;
+			playerColorStops[i] = tempColorStop;
+		}
+			
+	}
+	
+	
+	
+	function animateTitle(){
+		context.fillStyle="#000000";
+		context.fillRect(0,0,480,320);	
+		
+		//Text
+		
+		
+		var message1 = "VGS 8200";
+		var message2 = "Christmas";
+		var message3 = "Quest";
+		
+		gradientline={topx:theCanvas.width/2, topy:25, botx:theCanvas.width/2, boty:200};
+		
+		//context.drawImage(titleFrames[titleIndex],50,100);
+		context.fillStyle    = gradient;
+		context.font =  "20px Arcade Normal" 
+		context.textAlign = "left";
+		context.textBaseline = "middle";
+		context.fillText  ( message1, 110 ,50);	
+		context.font =  "32px Arcade Normal" 
+		context.fillText  ( message2,  110 ,75);	
+		context.font =  "16px Arcade Normal" 
+		context.fillText  ( message3,  310 ,100);	
+		
+		context.drawImage(clickToStartImage,120,290);
+		context.drawImage(vcsImage,170,125);
+			
+		if (!titlesoundplaying) {
+			console.log("trying to play music");
+			sound_title.loop=true;
+			sound_title.play();
+			titlesoundplaying=true;
+		}
+		
+	}
+	
+	function displayInstructions(){
+		context.fillStyle="#000000";
+		context.fillRect(0,0,480,350);
+		context.drawImage(instructionsImage,0,0);
+		context.drawImage(clickToStartImage,120,290);
+		
+	}
+	
+	
+	function update(){
+		context.fillStyle=currentBackgroundColor;
+		context.fillRect(0,0,480,320);	
+		
+		//console.log("player.x=" + Math.floor(player.x));
+		//console.log("player.y=" + Math.floor(player.y));
+		
+		
+		if (moves>0) {
+			nextLocation.x=player.x + xunits;
+			nextLocation.y=player.y + yunits;
+			moves--;
+		}else{
+			finished=true;	
+			if (player.initialPitFall) {
+				player.initialPitFall=false;
+			}
+			
+			if (pitFalling) {
+				pitFalling=false;
+				useMouseControl=true;
+			}
+			
+			if (player.jumping) {
+				player.jumping=false;	
+				doFallIngAfterPitJump()
+			}
+			
+			
+		}
+		
+	}
+	
+	function render(){
+		//console.log("render");
+		
+		
+		drawInventory();
+		screenDrawObjects();
+		context.save();
+		//context.fillStyle="#ff0000";
+		playerGradientline={topx:player.x,topy: player.y, botx:player.x+player.width, boty:player.y+player.height};
+		updatePlayerGradient();
+		context.fillStyle=playerGradient;
+		context.fillRect(player.x,player.y,player.width,player.height);
+		
+		
+		
+		if (!finished && player.canMove) {
+			player.x=nextLocation.x;
+			player.y=nextLocation.y;
+		}
+		context.restore();
+		
+	}
+	
+	function checkCollisions() {
+		player.canMove=true;
+		player.hitDoor=false;
+		if (!finished) {
+			for (var ctr=0;ctr<currentScreenObjects.length;ctr++) {
+					//console.log(ctr ,":" , currentScreenObjects[ctr].type);
+				if (currentScreenObjects[ctr].type =="rect" && !currentScreenObjects[ctr].nohit) {
+					if 	(boundingBoxCollideWithPlayer(currentScreenObjects[ctr])){
+						//console.log("hit: " + currentScreenObjects[ctr].name);
+						if (currentScreenObjects[ctr].door==true) {
+							console.log("hit door");
+							console.log("currentScreenObjects[ctr].nextScreen=" + currentScreenObjects[ctr].nextScreen);
+							if (currentScreenObjects[ctr].name=="reddoor") {
+								console.log("reddoor");
+								console.log ("hasRedKey=" + hasRedKey);
+								if (hasRedKey) {
+									moveToNextScreen(currentScreenObjects[ctr].nextScreen,currentScreenObjects[ctr].nextScreenX, currentScreenObjects[ctr].nextScreenY);
+								}else{
+									player.canMove=false
+								}
+								
+							}else if (currentScreenObjects[ctr].name=="yellowdoor") {
+								console.log("yellowdoor");
+								console.log ("hasYellowKey=" + hasYellowKey);
+								if (hasYellowKey) {
+									moveToNextScreen(currentScreenObjects[ctr].nextScreen,currentScreenObjects[ctr].nextScreenX, currentScreenObjects[ctr].nextScreenY);
+								}else{
+									player.canMove=false
+								}
+							}else if (currentScreenObjects[ctr].name=="greendoor") {
+								console.log("greendoor");
+								console.log ("hasGreenKey=" + hasGreenKey);
+								if (hasGreenKey) {
+									moveToNextScreen(currentScreenObjects[ctr].nextScreen,currentScreenObjects[ctr].nextScreenX, currentScreenObjects[ctr].nextScreenY);
+								}else{
+									player.canMove=false
+								}
+							}else{
+								console.log("door name=" + currentScreenObjects[ctr].name);
+								moveToNextScreen(currentScreenObjects[ctr].nextScreen,currentScreenObjects[ctr].nextScreenX, currentScreenObjects[ctr].nextScreenY);
+							}
+							
+							
+						}else{
+							player.canMove=false
+						}
+					}
+				}else if (currentScreenObjects[ctr].type=="object") {
+					
+					if 	(boundingBoxCollideWithPlayer(currentScreenObjects[ctr])){
+						//console.log("hit object");
+						console.log("object hit test " +currentScreenObjects[ctr].name );
+						if (currentScreenObjects[ctr].name=="redkey" && !hasRedKey){
+							console.log("got red key");
+							sound_pickup.play();
+							hasRedKey=true;
+						}else if (currentScreenObjects[ctr].name=="yellowkey" && !hasYellowKey){
+							console.log("got yellow key");
+							sound_pickup.play();
+							hasYellowKey=true;
+						}else if (currentScreenObjects[ctr].name=="greenkey" && !hasGreenKey){
+							console.log("got green key");
+							sound_pickup.play();
+							hasGreenKey=true;
+						}else if (currentScreenObjects[ctr].name=="present1" && !present1Complete &&!hasPresent1){
+							console.log("got present1");
+							sound_pickup.play();
+							hasPresent1=true;
+						}else if (currentScreenObjects[ctr].name=="atari" && !atariComplete &&!hasAtari){
+							console.log("got atari");
+							sound_pickup.play();
+							hasAtari=true;
+						}
+					}
+				}else if ( currentScreenObjects[ctr].type=="multirect"  ) {
+					
+					var rects= currentScreenObjects[ctr].rects;
+					for (var ctr2=0;ctr2<rects.length;ctr2++) {
+						
+						var rect=rects[ctr2];
+						if (boundingBoxCollideWithPlayer(rect) && rect.on){
+							//console.log("hit: " + rect.name);
+							if (currentScreenObjects[ctr].door==true) {
+								console.log("hit multi door");
+								console.log("currentScreenObjects[ctr].nextScreen=" + currentScreenObjects[ctr].nextScreen);
+								moveToNextScreen(currentScreenObjects[ctr].nextScreen,currentScreenObjects[ctr].nextScreenX, currentScreenObjects[ctr].nextScreenY);
+							}
+							
+							player.canMove=false
+						}
+					}
+				}else if ( currentScreenObjects[ctr].type=="toprect" &&  !player.initialPitFall ) {
+					if 	(boundingBoxCollideWithPlayer(currentScreenObjects[ctr])){
+						
+						if( !player.jumping){
+						 	player.canMove=false
+						 	finished=true;
+						 	pitFalling=false;
+							useMouseControl=true;
+						}else {
+							finished=true;
+							doFallIngAfterPitJump();
+							
+						}
+						
+					}
+				}else if (currentScreenObjects[ctr].name=="xmastree") {
+					//console.log("hit tree");
+					if (hasPresent1 && !present1Complete) {
+						present1Complete=true;
+						console.log("present1Complete=" + present1Complete);
+						sound_dropitem.play();
+					}
+				}
+			}
+		}
+		
+		
+	}
+	
+	
+	
+	function moveToNextScreen(screen, x, y) {
+		console.log("screen=" , screen, "x:", x, "y:",y);
+		switch(screen) {
+			case 0: 	
+				currentScreenObjects=screen0Objects;
+				currentBackgroundColor=screen0BackgroundColor;
+				break;
+			case 1:
+				currentScreenObjects=screen1Objects;
+				currentBackgroundColor=screen1BackgroundColor;
+				break;	
+			case 2:
+				currentScreenObjects=screen2Objects;
+				currentBackgroundColor=screen2BackgroundColor;
+				useMouseControl=false;
+				pitFalling=true;
+				//player falls to bottom of pit
+				setupPitFall()
+				break;	
+			case 3:
+				currentScreenObjects=screen3Objects;
+				currentBackgroundColor=screen3BackgroundColor;
+				break;
+			case 4:
+				currentScreenObjects=screen4Objects;
+				currentBackgroundColor=screen4BackgroundColor;
+				break;
+			case 5:
+				currentScreenObjects=screen5Objects;
+				currentBackgroundColor=screen5BackgroundColor;
+				break;
+			case 6:
+				currentScreenObjects=screen6Objects;
+				currentBackgroundColor=screen6BackgroundColor;
+				useMouseControl=false;
+				pitFalling=true;
+				//player falls to bottom of pit
+				setupPitFall()
+				break;	
+			case 7:
+				currentScreenObjects=screen7Objects;
+				currentBackgroundColor=screen7BackgroundColor;
+				break;
+		}
+		player.x=x;
+		player.y=y;
+		nextLocation.x=player.x;
+		nextLocation.y=player.y;
+		
+	}
+	
+	function setupPitFall() {
+		player.initialPitFall=true;
+		console.log("setting up pit fall");
+		endLocation.x=240;
+		endLocation.y=340;
+		var startLocationX=240;
+		var startLocationY=0;
+		var xd=endLocation.x-startLocationX;
+		var yd=endLocation.y-startLocationY;
+		console.log("player.x=" + player.x);
+		console.log("player.y=" + player.y
+		);
+		console.log("xd=" + xd);
+		console.log("yd=" + yd);
+		var distance=Math.sqrt(xd*xd + yd*yd);
+		moves=Math.floor(Math.abs(distance/3));
+		xunits=(endLocation.x-startLocationX)/moves;
+		yunits=(endLocation.y-startLocationY)/moves
+		finished=false;
+		
+		console.log("moves=" + moves);
+		console.log("xunits=" + xunits);
+		console.log("yunits=" + yunits);
+		sound_fall.play();
+		
+	}
+	
+	function doFallIngAfterPitJump(){
+		pitFalling=true;
+		useMouseControl=false;
+		endLocation.x=player.x;
+		endLocation.y=340;
+		var startLocationX=player.x;
+		var startLocationY=player.y;
+		var xd=endLocation.x-startLocationX;
+		var yd=endLocation.y-startLocationY;
+		var distance=Math.sqrt(xd*xd + yd*yd);
+		moves=Math.floor(Math.abs(distance/3));
+		xunits=(endLocation.x-startLocationX)/moves;
+		yunits=(endLocation.y-startLocationY)/moves
+		finished=false;
+
+	}
+	
+	function screenDrawObjects(){
+		for (var ctr=0;ctr<currentScreenObjects.length;ctr++) {
+			if (currentScreenObjects[ctr].type=="rect" || currentScreenObjects[ctr].type=="toprect" ) {
+				context.fillStyle=currentScreenObjects[ctr].color;
+				context.fillRect(currentScreenObjects[ctr].x,currentScreenObjects[ctr].y,currentScreenObjects[ctr].width,currentScreenObjects[ctr].height);
+			}else if (currentScreenObjects[ctr].type=="image"  ) {
+				//console.log("image=", currentScreenObjects[ctr].image);
+				context.drawImage(currentScreenObjects[ctr].image,currentScreenObjects[ctr].x, currentScreenObjects[ctr].y, currentScreenObjects[ctr].width, currentScreenObjects[ctr].height );
+			}else if (currentScreenObjects[ctr].type=="object") {
+				if (currentScreenObjects[ctr].name=="redkey" && !hasRedKey) {
+					context.drawImage(currentScreenObjects[ctr].image,currentScreenObjects[ctr].x, currentScreenObjects[ctr].y, currentScreenObjects[ctr].width, currentScreenObjects[ctr].height);
+				}else if (currentScreenObjects[ctr].name=="yellowkey" && !hasYellowKey) {
+					context.drawImage(currentScreenObjects[ctr].image,currentScreenObjects[ctr].x, currentScreenObjects[ctr].y, currentScreenObjects[ctr].width, currentScreenObjects[ctr].height);
+				}else if (currentScreenObjects[ctr].name=="greenkey" && !hasGreenKey) {
+					context.drawImage(currentScreenObjects[ctr].image,currentScreenObjects[ctr].x, currentScreenObjects[ctr].y, currentScreenObjects[ctr].width, currentScreenObjects[ctr].height);
+				}else if (currentScreenObjects[ctr].name=="present1" && !hasPresent1) {
+					context.drawImage(currentScreenObjects[ctr].image,currentScreenObjects[ctr].x, currentScreenObjects[ctr].y, currentScreenObjects[ctr].width, currentScreenObjects[ctr].height);
+				}else if (currentScreenObjects[ctr].name=="atari" && !hasAtari) {
+					context.drawImage(currentScreenObjects[ctr].image,currentScreenObjects[ctr].x, currentScreenObjects[ctr].y, currentScreenObjects[ctr].width*2, currentScreenObjects[ctr].height*2);
+				}else if (currentScreenObjects[ctr].name=="present1complete") {
+					if (hasPresent1 && present1Complete){
+						//console.log("draw present 1 under tree");
+						context.drawImage(currentScreenObjects[ctr].image,currentScreenObjects[ctr].x, currentScreenObjects[ctr].y, currentScreenObjects[ctr].width, currentScreenObjects[ctr].height);
+					}
+				}
+			}else if (currentScreenObjects[ctr].type=="multirect"  ) {
+				var multiRect=currentScreenObjects[ctr];
+				
+				if (multiRect.name="pit") {
+					//console.log("pit");
+		
+					multiRect.animationCount++;
+					if (multiRect.animationCount > multiRect.animationDelay) {
+						multiRect.animationCount=0;
+						multiRect.animationIndex++;
+						if (multiRect.animationIndex == multiRect.displayArray.length) {
+							multiRect.animationIndex=0;
+						}
+					}
+					//turn off all rects
+				     for (var ctr2=0;ctr2<multiRect.rects.length;ctr2++) {
+						 multiRect.rects[ctr2].on=false;
+					 }
+					 
+					var pitObjects=multiRect.displayArray[multiRect.animationIndex].split(",");
+						for (var ctr3=0;ctr3<pitObjects.length;ctr3++) {
+							var pitrect=multiRect.rects[ctr3];
+							//console.log("pitObjects[ctr3]=" + pitObjects[ctr3]);
+							
+							if (pitObjects[ctr3]!=99) {
+								pitrect.on=true;
+								context.fillStyle=pitrect.color;
+								context.fillRect(pitrect.x,pitrect.y,pitrect.width,pitrect.height);
+							}
+						}	
+					}
+			}
+		}
+		
+		if (currentScreenObjects==screen7Objects) {
+			
+			drawRunningMan()
+			
+		}
+	}
+	
+	
+	function drawRunningMan() {
+		console.log("player.y=" + Math.floor(player.y));
+			var diffx=player.x-runningMan.x;
+			var diffy=player.y-runningMan.y;
+			var radians=Math.atan2(diffy, diffx);
+			var degrees=360 * radians  / (2 * Math.PI);
+			runningMan.dx=Math.cos((Math.PI*degrees)/180);
+			runningMan.dy=Math.sin((Math.PI*degrees)/180);
+			
+			runningMan.x+=runningMan.dx;
+			runningMan.y+=runningMan.dy;
+									
+			var sourceX=Math.floor(runningManFrames[runningManFrameIndex] % 5)*64;
+			var sourceY=Math.floor(runningManFrames[runningManFrameIndex] / 5)*64;
+			
+			if (player.x < runningMan.x) {
+				context.drawImage(runningTiles2,sourceX, sourceY,64,64,runningMan.x,runningMan.y,64,64);	
+			}else{
+				context.drawImage(runningTiles,sourceX, sourceY,64,64,runningMan.x,runningMan.y,64,64);	
+			}
+			
+			runningCount++;
+			if (runningCount > runningDelay) {
+				runningCount=0;
+				runningManFrameIndex++;
+			
+				if (runningManFrameIndex == runningManFrames.length) {
+					runningManFrameIndex=0;
+				}
+			}
+	}
+	
+	function drawInventory() {
+		
+		if (hasYellowKey) {
+			context.drawImage(screen0Objects[6].image,20,300, 16, 16);
+		}
+		if (hasRedKey) {
+			context.drawImage(screen2Objects[17].image,40,300, 16, 16);
+		}
+		
+		if (hasPresent1 && !present1Complete) {
+			context.drawImage(screen3Objects[6].image,60,300, 16, 16)
+		}
+		
+		if (hasGreenKey) {
+			context.drawImage(screen6Objects[17].image,80,300, 16, 16)
+		}
+		
+		if (hasAtari) {
+			context.drawImage(screen7Objects[4].image,100,300, 16, 16)
+		}
+	}
+	
+	function setupScreen0Objects(){
+		screen0BackgroundColor="#000000"
+		screen0Objects=[];
+		screen0Objects[0]={};
+		screen0Objects[0].name="topwall";
+		screen0Objects[0].type="rect";
+		screen0Objects[0].color="#0000ff"
+		screen0Objects[0].x=0;
+		screen0Objects[0].y=0;
+		screen0Objects[0].width=480;
+		screen0Objects[0].height=20;
+		
+		screen0Objects[1]={};
+		screen0Objects[1].name="leftwall";
+		screen0Objects[1].type="rect";
+		screen0Objects[1].color="#0000ff"
+		screen0Objects[1].x=0;
+		screen0Objects[1].y=0;
+		screen0Objects[1].width=20;
+		screen0Objects[1].height=300;
+		
+		screen0Objects[2]={};
+		screen0Objects[2].name="rightwall";
+		screen0Objects[2].type="rect";
+		screen0Objects[2].color="#0000ff"
+		screen0Objects[2].x=460;
+		screen0Objects[2].y=0;
+		screen0Objects[2].width=20;
+		screen0Objects[2].height=300;
+		
+		screen0Objects[3]={};
+		screen0Objects[3].name="xmastree";
+		screen0Objects[3].type="image";
+		screen0Objects[3].image=new Image();
+		screen0Objects[3].image.src="tree1.gif";
+		screen0Objects[3].x=120;
+		screen0Objects[3].y=30;
+		screen0Objects[3].width=205;
+		screen0Objects[3].height=243;
+		
+		screen0Objects[4]={};
+		screen0Objects[4].name="botwall";
+		screen0Objects[4].type="rect";
+		screen0Objects[4].color="#0000ff"
+		screen0Objects[4].x=0;
+		screen0Objects[4].y=280;
+		screen0Objects[4].width=380;
+		screen0Objects[4].height=20;
+		
+		screen0Objects[5]={};
+		screen0Objects[5].name="yellowdoor";
+		screen0Objects[5].door=true;
+		screen0Objects[5].type="rect";
+		screen0Objects[5].color="#ff9900"
+		screen0Objects[5].x=380;
+		screen0Objects[5].y=280;
+		screen0Objects[5].width=80;
+		screen0Objects[5].height=20;
+		screen0Objects[5].nextScreen=1;
+		screen0Objects[5].nextScreenX=380;
+		screen0Objects[5].nextScreenY=30;
+		
+		screen0Objects[6]={};
+		screen0Objects[6].name="yellowkey";
+		screen0Objects[6].key=true;
+		screen0Objects[6].type="object";
+		screen0Objects[6].image=new Image();
+		screen0Objects[6].image.src="yellow_key.gif";
+		screen0Objects[6].x=300;
+		screen0Objects[6].y=60;
+		screen0Objects[6].width=32;
+		screen0Objects[6].height=22;
+		
+		screen0Objects[7]={};
+		screen0Objects[7].name="present1complete";
+		screen0Objects[7].present=true;
+		screen0Objects[7].type="object";
+		screen0Objects[7].image=new Image();
+		screen0Objects[7].image.src="present1.gif";
+		screen0Objects[7].x=70;
+		screen0Objects[7].y=260;
+		screen0Objects[7].width=32;
+		screen0Objects[7].height=22;
+		
+	
+	}
+	
+	function setupScreen1Objects(){
+		screen1BackgroundColor="#000000";
+		screen1Objects=[];
+		screen1Objects[0]={};
+		screen1Objects[0].name="topwall";
+		screen1Objects[0].type="rect";
+		screen1Objects[0].color="#0000ff"
+		screen1Objects[0].x=0;
+		screen1Objects[0].y=0;
+		screen1Objects[0].width=480;
+		screen1Objects[0].height=20;
+		
+		screen1Objects[1]={};
+		screen1Objects[1].name="rightwall1";
+		screen1Objects[1].type="rect";
+		screen1Objects[1].color="#0000ff"
+		screen1Objects[1].x=460;
+		screen1Objects[1].y=0;
+		screen1Objects[1].width=20;
+		screen1Objects[1].height=110;
+		
+		screen1Objects[2]={};
+		screen1Objects[2].name="botwall";
+		screen1Objects[2].type="rect";
+		screen1Objects[2].color="#0000ff"
+		screen1Objects[2].x=0;
+		screen1Objects[2].y=280;
+		screen1Objects[2].width=480;
+		screen1Objects[2].height=20;
+		
+		screen1Objects[3]={};
+		screen1Objects[3].name="pit";
+		screen1Objects[3].type="multirect";
+		screen1Objects[3].animate=true;
+		screen1Objects[3].animationCount=0;
+		screen1Objects[3].animationDelay=120;
+		screen1Objects[3].animationIndex=0;
+		screen1Objects[3].displayArray=["0,1,2,3,4","0,1,2","0","99","0","0,1,2"];
+		screen1Objects[3].rects=[]
+		screen1Objects[3].rects[0]={}
+		screen1Objects[3].rects[0].name="pitrect0";
+		screen1Objects[3].rects[0].color="#888888"
+		screen1Objects[3].rects[0].x=200;
+		screen1Objects[3].rects[0].y=20;
+		screen1Objects[3].rects[0].width=80;
+		screen1Objects[3].rects[0].height=260;
+		screen1Objects[3].rects[0].on=true;
+		screen1Objects[3].door=true;
+		screen1Objects[3].nextScreen=2;
+		screen1Objects[3].nextScreenX=240;
+		screen1Objects[3].nextScreenY=0;
+		
+		
+		screen1Objects[3].rects[1]={}
+		screen1Objects[3].rects[1].name="pitrect1";
+		screen1Objects[3].rects[1].color="#888888"
+		screen1Objects[3].rects[1].x=180;
+		screen1Objects[3].rects[1].y=40;
+		screen1Objects[3].rects[1].width=20;
+		screen1Objects[3].rects[1].height=220;
+		screen1Objects[3].rects[1].on=true;
+		
+		
+		screen1Objects[3].rects[2]={}
+		screen1Objects[3].rects[2].name="pitrect2";
+		screen1Objects[3].rects[2].color="#888888"
+		screen1Objects[3].rects[2].x=280;
+		screen1Objects[3].rects[2].y=40;
+		screen1Objects[3].rects[2].width=20;
+		screen1Objects[3].rects[2].height=220;
+		screen1Objects[3].rects[2].on=true;
+		
+		
+		screen1Objects[3].rects[3]={}
+		screen1Objects[3].rects[3].name="pitrect3";
+		screen1Objects[3].rects[3].color="#888888"
+		screen1Objects[3].rects[3].x=160;
+		screen1Objects[3].rects[3].y=60;
+		screen1Objects[3].rects[3].width=20;
+		screen1Objects[3].rects[3].height=180;
+		screen1Objects[3].rects[3].on=true;
+		
+		
+		screen1Objects[3].rects[4]={}
+		screen1Objects[3].rects[4].name="pitrect4";
+		screen1Objects[3].rects[4].color="#888888"
+		screen1Objects[3].rects[4].x=300;
+		screen1Objects[3].rects[4].y=60;
+		screen1Objects[3].rects[4].width=20;
+		screen1Objects[3].rects[4].height=180;
+		screen1Objects[3].rects[4].on=true;
+		
+		screen1Objects[4]={};
+		screen1Objects[4].name="yellowdoor";
+		screen1Objects[4].door=true;
+		screen1Objects[4].type="rect";
+		screen1Objects[4].color="#ff9900"
+		screen1Objects[4].x=380;
+		screen1Objects[4].y=0;
+		screen1Objects[4].width=80;
+		screen1Objects[4].height=20;
+		screen1Objects[4].nextScreen=0;
+		screen1Objects[4].nextScreenX=380;
+		screen1Objects[4].nextScreenY=250;
+		
+		screen1Objects[5]={};
+		screen1Objects[5].name="leftwall1";
+		screen1Objects[5].type="rect";
+		screen1Objects[5].color="#0000ff"
+		screen1Objects[5].x=0;
+		screen1Objects[5].y=0;
+		screen1Objects[5].width=20;
+		screen1Objects[5].height=110;
+		
+		screen1Objects[6]={};
+		screen1Objects[6].name="leftwall2";
+		screen1Objects[6].type="rect";
+		screen1Objects[6].color="#0000ff"
+		screen1Objects[6].x=0;
+		screen1Objects[6].y=190;
+		screen1Objects[6].width=20;
+		screen1Objects[6].height=110;
+		
+		screen1Objects[7]={};
+		screen1Objects[7].name="reddoor";
+		screen1Objects[7].door=true;
+		screen1Objects[7].type="rect";
+		screen1Objects[7].color="#ff0000"
+		screen1Objects[7].x=0;
+		screen1Objects[7].y=110;
+		screen1Objects[7].width=20;
+		screen1Objects[7].height=80;
+		screen1Objects[7].nextScreen=3;
+		screen1Objects[7].nextScreenX=380;
+		screen1Objects[7].nextScreenY=200;
+		
+		screen1Objects[8]={};
+		screen1Objects[8].name="rightwall2";
+		screen1Objects[8].type="rect";
+		screen1Objects[8].color="#0000ff"
+		screen1Objects[8].x=460;
+		screen1Objects[8].y=190;
+		screen1Objects[8].width=20;
+		screen1Objects[8].height=110;
+		
+		screen1Objects[9]={};
+		screen1Objects[9].name="greendoor";
+		screen1Objects[9].door=true;
+		screen1Objects[9].type="rect";
+		screen1Objects[9].color="#009900"
+		screen1Objects[9].x=460;
+		screen1Objects[9].y=110;
+		screen1Objects[9].width=20;
+		screen1Objects[9].height=80;
+		screen1Objects[9].nextScreen=7;
+		screen1Objects[9].nextScreenX=50;
+		screen1Objects[9].nextScreenY=100;
+		
+	}
+	
+	function setupScreen2Objects(){
+		//the pit	
+		screen2BackgroundColor="#000000";
+		screen2Objects[0]={};
+		screen2Objects[0].name="botwall";
+		screen2Objects[0].type="rect";
+		screen2Objects[0].color="#888888"
+		screen2Objects[0].x=100;
+		screen2Objects[0].y=300;
+		screen2Objects[0].width=280;
+		screen2Objects[0].height=20;
+		
+		screen2Objects[1]={};
+		screen2Objects[1].name="sidewallleft1";
+		screen2Objects[1].type="rect";
+		screen2Objects[1].color="#888888"
+		screen2Objects[1].x=100;
+		screen2Objects[1].y=260;
+		screen2Objects[1].width=20;
+		screen2Objects[1].height=40;
+		
+		screen2Objects[2]={};
+		screen2Objects[2].name="sidewallright1";
+		screen2Objects[2].type="rect";
+		screen2Objects[2].color="#888888"
+		screen2Objects[2].x=360;
+		screen2Objects[2].y=260;
+		screen2Objects[2].width=20;
+		screen2Objects[2].height=40;
+		
+		screen2Objects[3]={};
+		screen2Objects[3].name="sidewallleft2";
+		screen2Objects[3].type="rect";
+		screen2Objects[3].color="#888888"
+		screen2Objects[3].x=80;
+		screen2Objects[3].y=180;
+		screen2Objects[3].width=20;
+		screen2Objects[3].height=80;
+		
+		screen2Objects[4]={};
+		screen2Objects[4].name="sidewallright2";
+		screen2Objects[4].type="rect";
+		screen2Objects[4].color="#888888"
+		screen2Objects[4].x=380;
+		screen2Objects[4].y=180;
+		screen2Objects[4].width=20;
+		screen2Objects[4].height=80;
+		
+		screen2Objects[5]={};
+		screen2Objects[5].name="sidewallleft3";
+		screen2Objects[5].type="rect";
+		screen2Objects[5].color="#888888"
+		screen2Objects[5].x=60;
+		screen2Objects[5].y=100;
+		screen2Objects[5].width=20;
+		screen2Objects[5].height=80;
+		
+		screen2Objects[6]={};
+		screen2Objects[6].name="sidewallright3";
+		screen2Objects[6].type="rect";
+		screen2Objects[6].color="#888888"
+		screen2Objects[6].x=400;
+		screen2Objects[6].y=100;
+		screen2Objects[6].width=20;
+		screen2Objects[6].height=80;
+		
+		screen2Objects[7]={};
+		screen2Objects[7].name="sidewallleft4";
+		screen2Objects[7].type="rect";
+		screen2Objects[7].color="#888888"
+		screen2Objects[7].x=40;
+		screen2Objects[7].y=20;
+		screen2Objects[7].width=20;
+		screen2Objects[7].height=80;
+		
+		screen2Objects[8]={};
+		screen2Objects[8].name="sidewallright4";
+		screen2Objects[8].type="rect";
+		screen2Objects[8].color="#888888"
+		screen2Objects[8].x=420;
+		screen2Objects[8].y=20;
+		screen2Objects[8].width=20;
+		screen2Objects[8].height=80;
+		
+		screen2Objects[9]={};
+		screen2Objects[9].name="moveblock1";
+		screen2Objects[9].type="toprect";
+		screen2Objects[9].color="#00ffff"
+		screen2Objects[9].x=120;
+		screen2Objects[9].y=220;
+		screen2Objects[9].width=40;
+		screen2Objects[9].height=40;
+		
+		screen2Objects[10]={};
+		screen2Objects[10].name="moveblock2";
+		screen2Objects[10].type="toprect";
+		screen2Objects[10].color="#00ffff"
+		screen2Objects[10].x=200;
+		screen2Objects[10].y=100;
+		screen2Objects[10].width=40;
+		screen2Objects[10].height=40;
+		
+		screen2Objects[11]={};
+		screen2Objects[11].name="moveblock3";
+		screen2Objects[11].type="toprect";
+		screen2Objects[11].color="#00ffff"
+		screen2Objects[11].x=300;
+		screen2Objects[11].y=60;
+		screen2Objects[11].width=40;
+		screen2Objects[11].height=40;
+		
+		screen2Objects[12]={};
+		screen2Objects[12].name="moveblock4";
+		screen2Objects[12].type="toprect";
+		screen2Objects[12].color="#00ffff"
+		screen2Objects[12].x=280;
+		screen2Objects[12].y=160;
+		screen2Objects[12].width=40;
+		screen2Objects[12].height=40;
+		
+		screen2Objects[13]={};
+		screen2Objects[13].name="moveblock5";
+		screen2Objects[13].type="toprect";
+		screen2Objects[13].color="#00ffff"
+		screen2Objects[13].x=100;
+		screen2Objects[13].y=80;
+		screen2Objects[13].width=40;
+		screen2Objects[13].height=40;
+		
+		screen2Objects[14]={};
+		screen2Objects[14].name="moveblock6";
+		screen2Objects[14].type="toprect";
+		screen2Objects[14].color="#00ffff"
+		screen2Objects[14].x=200;
+		screen2Objects[14].y=200;
+		screen2Objects[14].width=40;
+		screen2Objects[14].height=40;
+		
+		screen2Objects[15]={};
+		screen2Objects[15].name="door1";
+		screen2Objects[15].door=true;
+		screen2Objects[15].type="rect";
+		screen2Objects[15].color="#000000"
+		screen2Objects[15].x=0;
+		screen2Objects[15].y=0;
+		screen2Objects[15].width=200;
+		screen2Objects[15].height=20;
+		screen2Objects[15].nextScreen=1;
+		screen2Objects[15].nextScreenX=50;
+		screen2Objects[15].nextScreenY=200;
+		
+		screen2Objects[16]={};
+		screen2Objects[16].name="door2";
+		screen2Objects[16].door=true;
+		screen2Objects[16].type="rect";
+		screen2Objects[16].color="#000000"
+		screen2Objects[16].x=300;
+		screen2Objects[16].y=0;
+		screen2Objects[16].width=200;
+		screen2Objects[16].height=20;
+		screen2Objects[16].nextScreen=1;
+		screen2Objects[16].nextScreenX=350;
+		screen2Objects[16].nextScreenY=200;
+		
+		screen2Objects[17]={};
+		screen2Objects[17].name="redkey";
+		screen2Objects[17].key=true;
+		screen2Objects[17].type="object";
+		screen2Objects[17].color="#ffff00"
+		screen2Objects[17].image=new Image();
+		screen2Objects[17].image.src="red_key.gif";
+		screen2Objects[17].x=100;
+		screen2Objects[17].y=60;
+		screen2Objects[17].width=32;
+		screen2Objects[17].height=22;
+		
+		screen2Objects[18]={};
+		screen2Objects[18].name="topblock1";
+		screen2Objects[18].type="rect";
+		screen2Objects[18].nohit=true;
+		screen2Objects[18].color="#888888"
+		screen2Objects[18].x=200;
+		screen2Objects[18].y=0;
+		screen2Objects[18].width=80;
+		screen2Objects[18].height=20;
+		
+		
+	}
+	
+	function setupScreen3Objects(){
+		screen3BackgroundColor="#000000";
+		screen3Objects=[];
+		screen3Objects[0]={};
+		screen3Objects[0].name="topwall";
+		screen3Objects[0].type="rect";
+		screen3Objects[0].color="#0000ff"
+		screen3Objects[0].x=0;
+		screen3Objects[0].y=0;
+		screen3Objects[0].width=480;
+		screen3Objects[0].height=20;
+		
+		screen3Objects[1]={};
+		screen3Objects[1].name="rightwall1";
+		screen3Objects[1].type="rect";
+		screen3Objects[1].color="#0000ff"
+		screen3Objects[1].x=460;
+		screen3Objects[1].y=0;
+		screen3Objects[1].width=20;
+		screen3Objects[1].height=110;
+		
+		screen3Objects[2]={};
+		screen3Objects[2].name="rightdoor";
+		screen3Objects[2].type="rect";
+		screen3Objects[2].door=true;
+		screen3Objects[2].color="#000000"
+		screen3Objects[2].x=0;
+		screen3Objects[2].y=20;
+		screen3Objects[2].width=20;
+		screen3Objects[2].height=280;
+		screen3Objects[2].nextScreen=4;
+		screen3Objects[2].nextScreenX=450;
+		screen3Objects[2].nextScreenY=130;
+		
+		screen3Objects[3]={};
+		screen3Objects[3].name="botwall";
+		screen3Objects[3].type="rect";
+		screen3Objects[3].color="#0000ff"
+		screen3Objects[3].x=0;
+		screen3Objects[3].y=280;
+		screen3Objects[3].width=480;
+		screen3Objects[3].height=20;
+		
+		screen3Objects[4]={};
+		screen3Objects[4].name="rightwall2";
+		screen3Objects[4].type="rect";
+		screen3Objects[4].color="#0000ff"
+		screen3Objects[4].x=460;
+		screen3Objects[4].y=180;
+		screen3Objects[4].width=20;
+		screen3Objects[4].height=110;
+		
+		screen3Objects[5]={};
+		screen3Objects[5].name="reddoor";
+		screen3Objects[5].door=true;
+		screen3Objects[5].type="rect";
+		screen3Objects[5].color="#ff0000"
+		screen3Objects[5].x=460;
+		screen3Objects[5].y=110;
+		screen3Objects[5].width=20;
+		screen3Objects[5].height=80;
+		screen3Objects[5].nextScreen=1;
+		screen3Objects[5].nextScreenX=50;
+		screen3Objects[5].nextScreenY=200;
+		
+		screen3Objects[6]={};
+		screen3Objects[6].name="present1";
+		screen3Objects[6].present=true;
+		screen3Objects[6].type="object";
+		screen3Objects[6].image=new Image();
+		screen3Objects[6].image.src="present1.gif";
+		screen3Objects[6].x=100;
+		screen3Objects[6].y=200;
+		screen3Objects[6].width=32;
+		screen3Objects[6].height=22;
+	}
+	
+	function setupScreen4Objects(){
+		screen4BackgroundColor="#ffff00";
+		screen4Objects=[];
+		
+		screen4Objects[0]={};
+		screen4Objects[0].name="topwall";
+		screen4Objects[0].type="rect";
+		screen4Objects[0].color="#ff0000"
+		screen4Objects[0].x=0;
+		screen4Objects[0].y=0;
+		screen4Objects[0].width=480;
+		screen4Objects[0].height=10;
+		
+		screen4Objects[1]={};
+		screen4Objects[1].name="leftwall";
+		screen4Objects[1].type="rect";
+		screen4Objects[1].color="#ff0000"
+		screen4Objects[1].x=0;
+		screen4Objects[1].y=0;
+		screen4Objects[1].width=10;
+		screen4Objects[1].height=300;
+		
+		screen4Objects[2]={};
+		screen4Objects[2].name="rightdoor";
+		screen4Objects[2].type="rect";
+		screen4Objects[2].door=true;
+		screen4Objects[2].color="#ffff00"
+		screen4Objects[2].x=480;
+		screen4Objects[2].y=20;
+		screen4Objects[2].width=20;
+		screen4Objects[2].height=280;
+		screen4Objects[2].nextScreen=3;
+		screen4Objects[2].nextScreenX=50;
+		screen4Objects[2].nextScreenY=200;
+		
+		screen4Objects[3]={};
+		screen4Objects[3].name="botwall";
+		screen4Objects[3].type="rect";
+		screen4Objects[3].color="#ff0000"
+		screen4Objects[3].x=40;
+		screen4Objects[3].y=290;
+		screen4Objects[3].width=480;
+		screen4Objects[3].height=10;
+		
+		screen4Objects[4]={};
+		screen4Objects[4].name="mazeblock4";
+		screen4Objects[4].type="rect";
+		screen4Objects[4].color="#000000"
+		screen4Objects[4].x=10;
+		screen4Objects[4].y=10;
+		screen4Objects[4].width=150;
+		screen4Objects[4].height=10;
+		
+		screen4Objects[5]={};
+		screen4Objects[5].name="mazeblock4";
+		screen4Objects[5].type="rect";
+		screen4Objects[5].color="#000000"
+		screen4Objects[5].x=150;
+		screen4Objects[5].y=20;
+		screen4Objects[5].width=10;
+		screen4Objects[5].height=70;
+		
+		screen4Objects[6]={};
+		screen4Objects[6].name="mazeblock4";
+		screen4Objects[6].type="rect";
+		screen4Objects[6].color="#000000"
+		screen4Objects[6].x=320;
+		screen4Objects[6].y=10;
+		screen4Objects[6].width=60;
+		screen4Objects[6].height=30;
+		
+		screen4Objects[7]={};
+		screen4Objects[7].name="mazeblock4";
+		screen4Objects[7].type="rect";
+		screen4Objects[7].color="#000000"
+		screen4Objects[7].x=410;
+		screen4Objects[7].y=10;
+		screen4Objects[7].width=40;
+		screen4Objects[7].height=70;
+		
+		screen4Objects[8]={};
+		screen4Objects[8].name="mazeblock5";
+		screen4Objects[8].type="rect";
+		screen4Objects[8].color="#000000"
+		screen4Objects[8].x=10;
+		screen4Objects[8].y=90;
+		screen4Objects[8].width=40;
+		screen4Objects[8].height=10;
+		
+		screen4Objects[9]={};
+		screen4Objects[9].name="mazeblock6";
+		screen4Objects[9].type="rect";
+		screen4Objects[9].color="#000000"
+		screen4Objects[9].x=40;
+		screen4Objects[9].y=50;
+		screen4Objects[9].width=10;
+		screen4Objects[9].height=40;
+		
+		screen4Objects[10]={};
+		screen4Objects[10].name="mazeblock7";
+		screen4Objects[10].type="rect";
+		screen4Objects[10].color="#000000"
+		screen4Objects[10].x=80;
+		screen4Objects[10].y=50;
+		screen4Objects[10].width=40;
+		screen4Objects[10].height=40;
+		
+		screen4Objects[11]={};
+		screen4Objects[11].name="mazeblock8";
+		screen4Objects[11].type="rect";
+		screen4Objects[11].color="#000000"
+		screen4Objects[11].x=190;
+		screen4Objects[11].y=40;
+		screen4Objects[11].width=20;
+		screen4Objects[11].height=50;
+		
+		screen4Objects[12]={};
+		screen4Objects[12].name="mazeblock9";
+		screen4Objects[12].type="rect";
+		screen4Objects[12].color="#000000"
+		screen4Objects[12].x=210;
+		screen4Objects[12].y=40;
+		screen4Objects[12].width=120;
+		screen4Objects[12].height=10;
+		
+		screen4Objects[13]={};
+		screen4Objects[13].name="mazeblock10";
+		screen4Objects[13].type="rect";
+		screen4Objects[13].color="#000000"
+		screen4Objects[13].x=10;
+		screen4Objects[13].y=100;
+		screen4Objects[13].width=10;
+		screen4Objects[13].height=150;
+		
+		screen4Objects[14]={};
+		screen4Objects[14].name="mazeblock11";
+		screen4Objects[14].type="rect";
+		screen4Objects[14].color="#000000"
+		screen4Objects[14].x=20;
+		screen4Objects[14].y=230;
+		screen4Objects[14].width=20;
+		screen4Objects[14].height=20;
+		
+		screen4Objects[15]={};
+		screen4Objects[15].name="mazeblock12";
+		screen4Objects[15].type="rect";
+		screen4Objects[15].color="#000000"
+		screen4Objects[15].x=80;
+		screen4Objects[15].y=90;
+		screen4Objects[15].width=20;
+		screen4Objects[15].height=40;
+		
+		screen4Objects[16]={};
+		screen4Objects[16].name="mazeblock13";
+		screen4Objects[16].type="rect";
+		screen4Objects[16].color="#000000"
+		screen4Objects[16].x=100;
+		screen4Objects[16].y=120;
+		screen4Objects[16].width=150;
+		screen4Objects[16].height=10;
+		
+		screen4Objects[17]={};
+		screen4Objects[17].name="mazeblock14";
+		screen4Objects[17].type="rect";
+		screen4Objects[17].color="#000000"
+		screen4Objects[17].x=240;
+		screen4Objects[17].y=80;
+		screen4Objects[17].width=50;
+		screen4Objects[17].height=20;
+		
+		screen4Objects[18]={};
+		screen4Objects[18].name="mazeblock15";
+		screen4Objects[18].type="rect";
+		screen4Objects[18].color="#000000"
+		screen4Objects[18].x=320;
+		screen4Objects[18].y=50;
+		screen4Objects[18].width=10;
+		screen4Objects[18].height=120;
+		
+		screen4Objects[19]={};
+		screen4Objects[19].name="mazeblock16";
+		screen4Objects[19].type="rect";
+		screen4Objects[19].color="#000000"
+		screen4Objects[19].x=360;
+		screen4Objects[19].y=70;
+		screen4Objects[19].width=20;
+		screen4Objects[19].height=60;
+		
+		screen4Objects[20]={};
+		screen4Objects[20].name="mazeblock17";
+		screen4Objects[20].type="rect";
+		screen4Objects[20].color="#000000"
+		screen4Objects[20].x=380;
+		screen4Objects[20].y=110;
+		screen4Objects[20].width=70;
+		screen4Objects[20].height=20;
+		
+		screen4Objects[21]={};
+		screen4Objects[21].name="mazeblock18";
+		screen4Objects[21].type="rect";
+		screen4Objects[21].color="#000000"
+		screen4Objects[21].x=50;
+		screen4Objects[21].y=130;
+		screen4Objects[21].width=30;
+		screen4Objects[21].height=30;
+		
+		screen4Objects[22]={};
+		screen4Objects[22].name="mazeblock19";
+		screen4Objects[22].type="rect";
+		screen4Objects[22].color="#000000"
+		screen4Objects[22].x=50;
+		screen4Objects[22].y=160;
+		screen4Objects[22].width=10;
+		screen4Objects[22].height=50;
+		
+		screen4Objects[23]={};
+		screen4Objects[23].name="mazeblock20";
+		screen4Objects[23].type="rect";
+		screen4Objects[23].color="#000000"
+		screen4Objects[23].x=60;
+		screen4Objects[23].y=190;
+		screen4Objects[23].width=20;
+		screen4Objects[23].height=20;
+		
+		screen4Objects[24]={};
+		screen4Objects[24].name="mazeblock21";
+		screen4Objects[24].type="rect";
+		screen4Objects[24].color="#000000"
+		screen4Objects[24].x=70;
+		screen4Objects[24].y=210;
+		screen4Objects[24].width=10;
+		screen4Objects[24].height=60;
+		
+		screen4Objects[25]={};
+		screen4Objects[25].name="mazeblock22";
+		screen4Objects[25].type="rect";
+		screen4Objects[25].color="#000000"
+		screen4Objects[25].x=40;
+		screen4Objects[25].y=270;
+		screen4Objects[25].width=110;
+		screen4Objects[25].height=20;
+		
+		screen4Objects[26]={};
+		screen4Objects[26].name="mazeblock23";
+		screen4Objects[26].type="rect";
+		screen4Objects[26].color="#000000"
+		screen4Objects[26].x=110;
+		screen4Objects[26].y=160;
+		screen4Objects[26].width=60;
+		screen4Objects[26].height=20;
+		
+		screen4Objects[27]={};
+		screen4Objects[27].name="mazeblock24";
+		screen4Objects[27].type="rect";
+		screen4Objects[27].color="#000000"
+		screen4Objects[27].x=110;
+		screen4Objects[27].y=180;
+		screen4Objects[27].width=10;
+		screen4Objects[27].height=40;
+		
+		screen4Objects[28]={};
+		screen4Objects[28].name="mazeblock25";
+		screen4Objects[28].type="rect";
+		screen4Objects[28].color="#000000"
+		screen4Objects[28].x=150;
+		screen4Objects[28].y=180;
+		screen4Objects[28].width=20;
+		screen4Objects[28].height=40;
+		
+		screen4Objects[29]={};
+		screen4Objects[29].name="mazeblock26";
+		screen4Objects[29].type="rect";
+		screen4Objects[29].color="#000000"
+		screen4Objects[29].x=170;
+		screen4Objects[29].y=200;
+		screen4Objects[29].width=60;
+		screen4Objects[29].height=20;
+		
+		screen4Objects[30]={};
+		screen4Objects[30].name="mazeblock27";
+		screen4Objects[30].type="rect";
+		screen4Objects[30].color="#000000"
+		screen4Objects[30].x=260;
+		screen4Objects[30].y=200;
+		screen4Objects[30].width=130;
+		screen4Objects[30].height=20;
+		
+		screen4Objects[31]={};
+		screen4Objects[31].name="mazeblock28";
+		screen4Objects[31].type="rect";
+		screen4Objects[31].color="#000000"
+		screen4Objects[31].x=200;
+		screen4Objects[31].y=130;
+		screen4Objects[31].width=10;
+		screen4Objects[31].height=40;
+		
+		screen4Objects[32]={};
+		screen4Objects[32].name="mazeblock29";
+		screen4Objects[32].type="rect";
+		screen4Objects[32].color="#000000"
+		screen4Objects[32].x=210;
+		screen4Objects[32].y=160;
+		screen4Objects[32].width=80;
+		screen4Objects[32].height=10;
+		
+		screen4Objects[33]={};
+		screen4Objects[33].name="mazeblock30";
+		screen4Objects[33].type="rect";
+		screen4Objects[33].color="#000000"
+		screen4Objects[33].x=280;
+		screen4Objects[33].y=100;
+		screen4Objects[33].width=10;
+		screen4Objects[33].height=60;
+		
+		screen4Objects[34]={};
+		screen4Objects[34].name="mazeblock31";
+		screen4Objects[34].type="rect";
+		screen4Objects[34].color="#000000"
+		screen4Objects[34].x=120;
+		screen4Objects[34].y=250;
+		screen4Objects[34].width=30;
+		screen4Objects[34].height=20;
+		
+		screen4Objects[35]={};
+		screen4Objects[35].name="mazeblock32";
+		screen4Objects[35].type="rect";
+		screen4Objects[35].color="#000000"
+		screen4Objects[35].x=150;
+		screen4Objects[35].y=250;
+		screen4Objects[35].width=190;
+		screen4Objects[35].height=10;
+		
+		screen4Objects[36]={};
+		screen4Objects[36].name="mazeblock33";
+		screen4Objects[36].type="rect";
+		screen4Objects[36].color="#000000"
+		screen4Objects[36].x=330;
+		screen4Objects[36].y=160;
+		screen4Objects[36].width=60;
+		screen4Objects[36].height=10;
+		
+		screen4Objects[37]={};
+		screen4Objects[37].name="mazeblock34";
+		screen4Objects[37].type="rect";
+		screen4Objects[37].color="#000000"
+		screen4Objects[37].x=370;
+		screen4Objects[37].y=170;
+		screen4Objects[37].width=20;
+		screen4Objects[37].height=30;
+		
+		screen4Objects[38]={};
+		screen4Objects[38].name="mazeblock35";
+		screen4Objects[38].type="rect";
+		screen4Objects[38].color="#000000"
+		screen4Objects[38].x=420;
+		screen4Objects[38].y=160;
+		screen4Objects[38].width=30;
+		screen4Objects[38].height=20;
+		
+		screen4Objects[39]={};
+		screen4Objects[39].name="mazeblock36";
+		screen4Objects[39].type="rect";
+		screen4Objects[39].color="#000000"
+		screen4Objects[39].x=370;
+		screen4Objects[39].y=250;
+		screen4Objects[39].width=40;
+		screen4Objects[39].height=40;
+		
+		screen4Objects[40]={};
+		screen4Objects[40].name="mazeblock37";
+		screen4Objects[40].type="rect";
+		screen4Objects[40].color="#000000"
+		screen4Objects[40].x=420;
+		screen4Objects[40].y=210;
+		screen4Objects[40].width=30;
+		screen4Objects[40].height=20;
+		
+		screen4Objects[41]={};
+		screen4Objects[41].name="mazeblock38";
+		screen4Objects[41].type="rect";
+		screen4Objects[41].color="#000000"
+		screen4Objects[41].x=440;
+		screen4Objects[41].y=230;
+		screen4Objects[41].width=10;
+		screen4Objects[41].height=60;
+		
+		screen4Objects[42]={};
+		screen4Objects[42].name="mazedoor";
+		screen4Objects[42].type="rect";
+		screen4Objects[42].door=true;
+		screen4Objects[42].color="#ffff00"
+		screen4Objects[42].x=20;
+		screen4Objects[42].y=290;
+		screen4Objects[42].width=20;
+		screen4Objects[42].height=20;
+		screen4Objects[42].nextScreen=5;
+		screen4Objects[42].nextScreenX=50;
+		screen4Objects[42].nextScreenY=20;
+		
+	}
+	
+	function setupScreen5Objects(){
+		screen5BackgroundColor="#ffff00";
+		screen5Objects=[];
+	
+		screen5Objects[0]={};
+		screen5Objects[0].name="topwall";
+		screen5Objects[0].type="rect";
+		screen5Objects[0].color="#ff0000"
+		screen5Objects[0].x=0;
+		screen5Objects[0].y=0;
+		screen5Objects[0].width=480;
+		screen5Objects[0].height=10;
+		
+		screen5Objects[1]={};
+		screen5Objects[1].name="leftwall";
+		screen5Objects[1].type="rect";
+		screen5Objects[1].color="#ff0000"
+		screen5Objects[1].x=0;
+		screen5Objects[1].y=0;
+		screen5Objects[1].width=10;
+		screen5Objects[1].height=300;
+		
+		screen5Objects[2]={};
+		screen5Objects[2].name="rightwall";
+		screen5Objects[2].type="rect";
+		screen5Objects[2].color="#ff0000"
+		screen5Objects[2].x=470;
+		screen5Objects[2].y=0;
+		screen5Objects[2].width=10;
+		screen5Objects[2].height=290;
+	
+		screen5Objects[3]={};
+		screen5Objects[3].name="botwall";
+		screen5Objects[3].type="rect";
+		screen5Objects[3].color="#ff0000"
+		screen5Objects[3].x=0;
+		screen5Objects[3].y=290;
+		screen5Objects[3].width=480;
+		screen5Objects[3].height=10;
+		
+		screen5Objects[4]={};
+		screen5Objects[4].name="mazedoorup";
+		screen5Objects[4].type="rect";
+		screen5Objects[4].door=true;
+		screen5Objects[4].color="#ffff00"
+		screen5Objects[4].x=10;
+		screen5Objects[4].y=0;
+		screen5Objects[4].width=30;
+		screen5Objects[4].height=20;
+		screen5Objects[4].nextScreen=4;
+		screen5Objects[4].nextScreenX=20;
+		screen5Objects[4].nextScreenY=270;
+		
+		
+		screen5Objects[5]={};
+		screen5Objects[5].name="pitdrop";
+		screen5Objects[5].type="rect";
+		screen5Objects[5].door=true;
+		screen5Objects[5].color="#0000ff"
+		screen5Objects[5].x=10;
+		screen5Objects[5].y=260;
+		screen5Objects[5].width=40;
+		screen5Objects[5].height=30;
+		screen5Objects[5].nextScreen=6;
+		screen5Objects[5].nextScreenX=240;
+		screen5Objects[5].nextScreenY=0;
+		
+		screen5Objects[6]={};
+		screen5Objects[6].name="mazeblock1";
+		screen5Objects[6].type="rect";
+		screen5Objects[6].color="#000000"
+		screen5Objects[6].x=10;
+		screen5Objects[6].y=40;
+		screen5Objects[6].width=430;
+		screen5Objects[6].height=20;
+		
+		screen5Objects[7]={};
+		screen5Objects[7].name="mazeblock2";
+		screen5Objects[7].type="rect";
+		screen5Objects[7].color="#000000"
+		screen5Objects[7].x=40;
+		screen5Objects[7].y=90;
+		screen5Objects[7].width=430;
+		screen5Objects[7].height=20;
+		
+		screen5Objects[8]={};
+		screen5Objects[8].name="mazeblock3";
+		screen5Objects[8].type="rect";
+		screen5Objects[8].color="#000000"
+		screen5Objects[8].x=10;
+		screen5Objects[8].y=140;
+		screen5Objects[8].width=430;
+		screen5Objects[8].height=20;
+		
+		screen5Objects[9]={};
+		screen5Objects[9].name="mazeblock4";
+		screen5Objects[9].type="rect";
+		screen5Objects[9].color="#000000"
+		screen5Objects[9].x=40;
+		screen5Objects[9].y=190;
+		screen5Objects[9].width=430;
+		screen5Objects[9].height=20;
+		
+		screen5Objects[10]={};
+		screen5Objects[10].name="mazeblock5";
+		screen5Objects[10].type="rect";
+		screen5Objects[10].color="#000000"
+		screen5Objects[10].x=10;
+		screen5Objects[10].y=240;
+		screen5Objects[10].width=430;
+		screen5Objects[10].height=20;
+		
+	}
+	
+	function setupScreen6Objects(){
+		//the pit	
+		screen6BackgroundColor="#000000";
+		screen6Objects[0]={};
+		screen6Objects[0].name="botwall";
+		screen6Objects[0].type="rect";
+		screen6Objects[0].color="#888888"
+		screen6Objects[0].x=100;
+		screen6Objects[0].y=300;
+		screen6Objects[0].width=280;
+		screen6Objects[0].height=20;
+		
+		screen6Objects[1]={};
+		screen6Objects[1].name="sidewallleft1";
+		screen6Objects[1].type="rect";
+		screen6Objects[1].color="#888888"
+		screen6Objects[1].x=100;
+		screen6Objects[1].y=260;
+		screen6Objects[1].width=20;
+		screen6Objects[1].height=40;
+		
+		screen6Objects[2]={};
+		screen6Objects[2].name="sidewallright1";
+		screen6Objects[2].type="rect";
+		screen6Objects[2].color="#888888"
+		screen6Objects[2].x=360;
+		screen6Objects[2].y=260;
+		screen6Objects[2].width=20;
+		screen6Objects[2].height=40;
+		
+		screen6Objects[3]={};
+		screen6Objects[3].name="sidewallleft2";
+		screen6Objects[3].type="rect";
+		screen6Objects[3].color="#888888"
+		screen6Objects[3].x=80;
+		screen6Objects[3].y=180;
+		screen6Objects[3].width=20;
+		screen6Objects[3].height=80;
+		
+		screen6Objects[4]={};
+		screen6Objects[4].name="sidewallright2";
+		screen6Objects[4].type="rect";
+		screen6Objects[4].color="#888888"
+		screen6Objects[4].x=380;
+		screen6Objects[4].y=180;
+		screen6Objects[4].width=20;
+		screen6Objects[4].height=80;
+		
+		screen6Objects[5]={};
+		screen6Objects[5].name="sidewallleft3";
+		screen6Objects[5].type="rect";
+		screen6Objects[5].color="#888888"
+		screen6Objects[5].x=60;
+		screen6Objects[5].y=100;
+		screen6Objects[5].width=20;
+		screen6Objects[5].height=80;
+		
+		screen6Objects[6]={};
+		screen6Objects[6].name="sidewallright3";
+		screen6Objects[6].type="rect";
+		screen6Objects[6].color="#888888"
+		screen6Objects[6].x=400;
+		screen6Objects[6].y=100;
+		screen6Objects[6].width=20;
+		screen6Objects[6].height=80;
+		
+		screen6Objects[7]={};
+		screen6Objects[7].name="sidewallleft4";
+		screen6Objects[7].type="rect";
+		screen6Objects[7].color="#888888"
+		screen6Objects[7].x=40;
+		screen6Objects[7].y=20;
+		screen6Objects[7].width=20;
+		screen6Objects[7].height=80;
+		
+		screen6Objects[8]={};
+		screen6Objects[8].name="sidewallright4";
+		screen6Objects[8].type="rect";
+		screen6Objects[8].color="#888888"
+		screen6Objects[8].x=420;
+		screen6Objects[8].y=20;
+		screen6Objects[8].width=20;
+		screen6Objects[8].height=80;
+		
+		screen6Objects[9]={};
+		screen6Objects[9].name="bottomleftblock";
+		screen6Objects[9].type="toprect";
+		screen6Objects[9].color="#00ff00"
+		screen6Objects[9].x=140;
+		screen6Objects[9].y=230;
+		screen6Objects[9].width=40;
+		screen6Objects[9].height=40;
+		
+		screen6Objects[10]={};
+		screen6Objects[10].name="moveblock2";
+		screen6Objects[10].type="toprect";
+		screen6Objects[10].color="#00ff00"
+		screen6Objects[10].x=200;
+		screen6Objects[10].y=100;
+		screen6Objects[10].width=40;
+		screen6Objects[10].height=40;
+		
+		screen6Objects[11]={};
+		screen6Objects[11].name="moveblock3";
+		screen6Objects[11].type="toprect";
+		screen6Objects[11].color="#00ff00"
+		screen6Objects[11].x=300;
+		screen6Objects[11].y=60;
+		screen6Objects[11].width=40;
+		screen6Objects[11].height=40;
+		
+		screen6Objects[12]={};
+		screen6Objects[12].name="bottomrightblock";
+		screen6Objects[12].type="toprect";
+		screen6Objects[12].color="#00ff00"
+		screen6Objects[12].x=310;
+		screen6Objects[12].y=200;
+		screen6Objects[12].width=40;
+		screen6Objects[12].height=40;
+		
+		screen6Objects[13]={};
+		screen6Objects[13].name="topleftblock";
+		screen6Objects[13].type="toprect";
+		screen6Objects[13].color="#00ff00"
+		screen6Objects[13].x=140;
+		screen6Objects[13].y=100;
+		screen6Objects[13].width=40;
+		screen6Objects[13].height=40;
+		
+		screen6Objects[14]={};
+		screen6Objects[14].name="bottommiddleblock";
+		screen6Objects[14].type="toprect";
+		screen6Objects[14].color="#00ff00"
+		screen6Objects[14].x=230;
+		screen6Objects[14].y=220;
+		screen6Objects[14].width=40;
+		screen6Objects[14].height=40;
+		
+		screen6Objects[15]={};
+		screen6Objects[15].name="door1";
+		screen6Objects[15].door=true;
+		screen6Objects[15].type="rect";
+		screen6Objects[15].color="#0000ff"
+		screen6Objects[15].x=0;
+		screen6Objects[15].y=0;
+		screen6Objects[15].width=100;
+		screen6Objects[15].height=40;
+		screen6Objects[15].nextScreen=5;
+		screen6Objects[15].nextScreenX=100;
+		screen6Objects[15].nextScreenY=270;
+		
+		screen6Objects[16]={};
+		screen6Objects[16].name="topblock2";
+		screen6Objects[16].type="rect";
+		screen6Objects[16].color="#888888"
+		screen6Objects[16].x=300;
+		screen6Objects[16].y=0;
+		screen6Objects[16].width=180;
+		screen6Objects[16].height=20;
+
+		
+		screen6Objects[17]={};
+		screen6Objects[17].name="greenkey";
+		screen6Objects[17].key=true;
+		screen6Objects[17].type="object";
+		screen6Objects[17].color="#ffff00"
+		screen6Objects[17].image=new Image();
+		screen6Objects[17].image.src="green_key.gif";
+		screen6Objects[17].x=360;
+		screen6Objects[17].y=160;
+		screen6Objects[17].width=32;
+		screen6Objects[17].height=22;
+		
+		screen6Objects[18]={};
+		screen6Objects[18].name="topblock1";
+		screen6Objects[18].type="rect";
+		screen6Objects[18].nohit=true;
+		screen6Objects[18].color="#888888"
+		screen6Objects[18].x=100;
+		screen6Objects[18].y=0;
+		screen6Objects[18].width=200;
+		screen6Objects[18].height=20;
+		
+		
+	}
+	
+	function setupScreen7Objects(){
+		screen7BackgroundColor="#000000";
+		screen7Objects=[];
+		
+		screen7Objects[0]={};
+		screen7Objects[0].name="topwall";
+		screen7Objects[0].type="rect";
+		screen7Objects[0].color="#0000ff"
+		screen7Objects[0].x=0;
+		screen7Objects[0].y=0;
+		screen7Objects[0].width=480;
+		screen7Objects[0].height=20;
+		
+		screen7Objects[1]={};
+		screen7Objects[1].name="rightwall1";
+		screen7Objects[1].type="rect";
+		screen7Objects[1].color="#0000ff"
+		screen7Objects[1].x=460;
+		screen7Objects[1].y=0;
+		screen7Objects[1].width=20;
+		screen7Objects[1].height=280;
+		
+		
+		screen7Objects[2]={};
+		screen7Objects[2].name="botwall";
+		screen7Objects[2].type="rect";
+		screen7Objects[2].color="#0000ff"
+		screen7Objects[2].x=0;
+		screen7Objects[2].y=280;
+		screen7Objects[2].width=480;
+		screen7Objects[2].height=20;
+		
+		
+		
+		screen7Objects[3]={};
+		screen7Objects[3].name="greendoor";
+		screen7Objects[3].door=true;
+		screen7Objects[3].type="rect";
+		screen7Objects[3].color="#009900"
+		screen7Objects[3].x=0;
+		screen7Objects[3].y=110;
+		screen7Objects[3].width=20;
+		screen7Objects[3].height=80;
+		screen7Objects[3].nextScreen=1;
+		screen7Objects[3].nextScreenX=360;
+		screen7Objects[3].nextScreenY=100;
+		
+		screen7Objects[4]={};
+		screen7Objects[4].name="atari";
+		screen7Objects[4].present=true;
+		screen7Objects[4].type="object";
+		screen7Objects[4].image=new Image();
+		screen7Objects[4].image.src="vcs1.gif";
+		screen7Objects[4].x=400;
+		screen7Objects[4].y=200;
+		screen7Objects[4].width=32;
+		screen7Objects[4].height=22;
+		
+		screen7Objects[5]={};
+		screen7Objects[5].name="leftwall1";
+		screen7Objects[5].type="rect";
+		screen7Objects[5].color="#0000ff"
+		screen7Objects[5].x=0;
+		screen7Objects[5].y=0;
+		screen7Objects[5].width=20;
+		screen7Objects[5].height=110;
+		
+		screen7Objects[6]={};
+		screen7Objects[6].name="leftwall2";
+		screen7Objects[6].type="rect";
+		screen7Objects[6].color="#0000ff"
+		screen7Objects[6].x=0;
+		screen7Objects[6].y=190;
+		screen7Objects[6].width=20;
+		screen7Objects[6].height=110;
+		
+		
+	}
+	
+
+	function onMouseClick(e) {
+		//console.log("click");	
+		if (mode=="title") {
+			mode="instructions";	
+		}else if(mode=="instructions") {
+			mode="getready";
+			sound_title.pause();	
+			titlesoundplaying=false;
+			sound_ingame.loop=true;
+			sound_ingame.play();
+		}
+		
+		
+		if (useMouseControl && mode=="game") {
+			mouseX=e.clientX-theCanvas.offsetLeft;
+			mouseY=e.clientY-theCanvas.offsetTop;
+			
+			endLocation.x=mouseX;
+			endLocation.y=mouseY;
+			var xd=endLocation.x-player.x;
+			var yd=endLocation.y-player.y;
+			var distance=Math.sqrt(xd*xd + yd*yd);
+			moves=Math.floor(Math.abs(distance/speed));
+			xunits=(endLocation.x-player.x)/moves;
+			yunits=(endLocation.y-player.y)/moves
+			finished=false;
+			
+			if (currentScreenObjects==screen2Objects || currentScreenObjects==screen6Objects) {
+				// pit
+				player.jumping=true;
+				sound_jump.play();
+				if (moves > maxPitJumpMoves) {
+					moves=maxPitJumpMoves;	
+				}
+			}
+		}
+	}
+
+	
+	function onMouseMove(e) {
+		if (useMouseControl) {
+			mouseX=e.clientX-theCanvas.offsetLeft;
+			mouseY=e.clientY-theCanvas.offsetTop;
+			
+			allMoveHandler(mouseX,mouseY);
+			e.preventDefault();
+		}else{
+			console.log("cannot use mouse right now");	
+		}
+	}
+	
+	
+	function onTouchMove(e) {
+		/*
+		targetEvent =  e.touches.item(0);
+		allmoveHandler(targetEvent.clientX,targetEvent.clientY);
+		alert("X=" + targetEvent.clientX);
+		*/
+		targetEvent =  e.touches.item(0);
+		//comsole.log("move X=" + targetEvent.clientX);
+		touchX=targetEvent.clientX-theCanvas.offsetLeft;
+		touchY=targetEvent.clientY-theCanvas.offsetTop;
+		allMoveHandler(touchX,touchY);
+		
+		e.preventDefault();
+		
+	}
+	
+	
+	function allMoveHandler(x, y) {
+		//console.log("mouseX=", mouseX);
+		//console.log("mouseY=", mouseY);
+		mouseX=x;
+		mouseY=y;
+	}
+	
+	function boundingBoxCollideWithPlayer(object2) {
+  
+  	//	console.log("name=" + object2.name);
+		
+		var left1 = nextLocation.x;
+		var left2 = object2.x;
+		var right1 = nextLocation.x + player.hitWidth;
+		var right2 = object2.x + object2.width;
+		var top1 = nextLocation.y;
+		var top2 = object2.y;
+		var bottom1 = nextLocation.y + player.hitHeight;
+		var bottom2 = object2.y + object2.height;
+	    
+		//console.log("right2=", right2);
+		//console.log("left2=", left2);
+		//console.log("bottom2=", bottom2);
+		//console.log("top2=",top2)
+		
+		if (bottom1 < top2) return(false);
+		if (top1 > bottom2) return(false);
+	    
+		if (right1 < left2) return(false);
+		if (left1 > right2) return(false);
+	    
+		return(true);
+
+	};
+	
+	
+	startUp();
+
+	
+}
+
+
+
+</script>
+</head>
+
+
+<body>
+
+<div style="position: absolute center; top: 0px; left: 0px; height: 100%; width: 100%;">
+<canvas id="canvas" width="480" height="320">
+ Your browser does not support the HTML 5 Canvas. 
+</canvas>
+
+</div>
+
+
+</body>
+</html>
